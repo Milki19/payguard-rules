@@ -21,10 +21,10 @@ class PaymentRuleEngineTest {
     @Test
     void shouldApproveWhenAllRulesPass() {
         PaymentRule firstRule = transaction ->
-                new RuleResult(true, DecisionType.APPROVED, "First rule passed");
+                new RuleResult(true, DecisionType.APPROVED, "FirstTestRule","First rule passed");
 
         PaymentRule secondRule = transaction ->
-                new RuleResult(true, DecisionType.APPROVED, "Second rule passed");
+                new RuleResult(true, DecisionType.APPROVED, "SecondTestRule","Second rule passed");
 
         PaymentRuleEngine engine = new PaymentRuleEngine(List.of(firstRule, secondRule));
 
@@ -38,13 +38,13 @@ class PaymentRuleEngineTest {
     @Test
     void shouldReturnFirstFailedRuleResult() {
         PaymentRule firstRule = transaction ->
-                new RuleResult(true, DecisionType.APPROVED, "First rule passed");
+                new RuleResult(true, DecisionType.APPROVED, "FirstTestRule","First rule passed");
 
         PaymentRule secondRule = transaction ->
-                new RuleResult(false, DecisionType.REVIEW, "Second rule failed");
+                new RuleResult(false, DecisionType.REVIEW, "SecondTestRule","Second rule failed");
 
         PaymentRule thirdRule = transaction ->
-                new RuleResult(false, DecisionType.REJECTED, "Third rule failed");
+                new RuleResult(false, DecisionType.REJECTED, "ThirdTestRule","Third rule failed");
 
         PaymentRuleEngine engine = new PaymentRuleEngine(List.of(firstRule, secondRule, thirdRule));
 
@@ -72,7 +72,7 @@ class PaymentRuleEngineTest {
     @Test
     void shouldThrowExceptionWhenTransactionIsNull() {
         PaymentRule rule = transaction ->
-                new RuleResult(true, DecisionType.APPROVED, "Rule passed");
+                new RuleResult(true, DecisionType.APPROVED, "RuleEngine","Rule passed");
 
         PaymentRuleEngine engine = new PaymentRuleEngine(List.of(rule));
 

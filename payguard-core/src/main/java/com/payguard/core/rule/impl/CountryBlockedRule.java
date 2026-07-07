@@ -42,10 +42,10 @@ public class CountryBlockedRule implements PaymentRule {
                 .toUpperCase(Locale.ROOT);
 
         if (blockedCountries.contains(transactionCountry)) {
-            return new RuleResult(false, DecisionType.REJECTED, "Transaction country is blocked");
+            return new RuleResult(false, DecisionType.REJECTED, "CountryBlockedRule","Transaction country is blocked");
         }
 
-        return new RuleResult(true, DecisionType.APPROVED, "Transaction country is allowed");
+        return new RuleResult(true, DecisionType.APPROVED, "CountryBlockedRule","Transaction country is allowed");
     }
 
     public Set<String> getBlockedCountries() {

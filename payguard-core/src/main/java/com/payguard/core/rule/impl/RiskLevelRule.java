@@ -35,16 +35,16 @@ public class RiskLevelRule implements PaymentRule {
         RiskLevel riskLevel = transaction.getCustomerRiskLevel();
         switch (riskLevel) {
             case HIGH:
-                return new RuleResult(false, DecisionType.REVIEW, "High risk customer requires manual review");
+                return new RuleResult(false, DecisionType.REVIEW, "RiskLevelRule","High risk customer requires manual review");
 
             case MEDIUM:
                 if (transaction.getAmount().compareTo(mediumRiskReviewLimit) > 0) {
-                    return new RuleResult(false, DecisionType.REVIEW, "Medium risk customer amount exceeds review limit");
+                    return new RuleResult(false, DecisionType.REVIEW, "RiskLevelRule","Medium risk customer amount exceeds review limit");
                 }
-                return new RuleResult(true, DecisionType.APPROVED, "Customer risk level is acceptable");
+                return new RuleResult(true, DecisionType.APPROVED, "RiskLevelRule","Customer risk level is acceptable");
 
             case LOW:
-                return new RuleResult(true, DecisionType.APPROVED, "Customer risk level is acceptable");
+                return new RuleResult(true, DecisionType.APPROVED, "RiskLevelRule","Customer risk level is acceptable");
 
             default:
                 throw new IllegalArgumentException("Unsupported risk level");

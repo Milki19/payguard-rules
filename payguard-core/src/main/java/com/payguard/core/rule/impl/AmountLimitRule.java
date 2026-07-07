@@ -30,9 +30,9 @@ public class AmountLimitRule implements PaymentRule {
         }
 
         if (transaction.getAmount().compareTo(reviewLimit) > 0) {
-            return new RuleResult(false, DecisionType.REVIEW, "Transaction amount exceeds review limit");
+            return new RuleResult(false, DecisionType.REVIEW, "AmountLimitRule","Transaction amount exceeds review limit");
         }else {
-            return new RuleResult(true, DecisionType.APPROVED, "Transaction amount is within allowed limit");
+            return new RuleResult(true, DecisionType.APPROVED, "AmountLimitRule","Transaction amount is within allowed limit");
         }
     }
 

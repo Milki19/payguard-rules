@@ -2,6 +2,7 @@ package com.payguard.core.engine;
 
 import com.payguard.core.model.DecisionType;
 import com.payguard.core.model.Transaction;
+import com.payguard.core.model.TransactionDecision;
 import com.payguard.core.rule.PaymentRule;
 import com.payguard.core.rule.RuleResult;
 
@@ -37,7 +38,16 @@ public class PaymentRuleEngine {
                 return result;
             }
         }
-        return new RuleResult(true, DecisionType.APPROVED, "Payment rules have been evaluated successfully");
+        return new RuleResult(true, DecisionType.APPROVED, "PaymentRuleEngine","Payment rules have been evaluated successfully");
+    }
+
+    public TransactionDecision decide(Transaction transaction) {
+        RuleResult result = evaluate(transaction);
+
+        return new TransactionDecision(
+                result.getDecisionType(),
+                List.of(result.getMessage())
+        );
     }
 
 
