@@ -40,10 +40,9 @@ public class CurrencyAllowedRule implements PaymentRule {
         String transactionCurrency = transaction.getCurrency().trim().toUpperCase(Locale.ROOT);
 
         if (!allowedCurrencies.contains(transactionCurrency))
-            return new RuleResult(false, DecisionType.REJECTED, "CurrencyAllowedRule","Transaction currency is not allowed");
+            return RuleResult.rejected("CurrencyBlockedRule", "Transaction currency is not allowed");
         else
-            return new RuleResult(true, DecisionType.APPROVED, "CurrencyAllowedRule","Transaction currency is allowed");
-
+            return RuleResult.approved("CountryBlockedRule", "Transaction currency is allowed");
     }
 
     public Set<String> getAllowedCurrencies() {

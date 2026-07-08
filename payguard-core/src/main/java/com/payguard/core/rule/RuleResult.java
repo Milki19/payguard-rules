@@ -29,6 +29,18 @@ public class RuleResult {
         this.message = message;
     }
 
+    public static RuleResult approved(String ruleName, String message) {
+        return new RuleResult(true, DecisionType.APPROVED, ruleName, message);
+    }
+
+    public static RuleResult review(String ruleName, String message) {
+        return new RuleResult(false, DecisionType.REVIEW, ruleName, message);
+    }
+
+    public static RuleResult rejected(String ruleName, String message) {
+        return new RuleResult(false, DecisionType.REJECTED, ruleName, message);
+    }
+
     public boolean isPassed() {
         return passed;
     }
