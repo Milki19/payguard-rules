@@ -1,6 +1,8 @@
 package com.payguard.demo.exception;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -12,6 +14,28 @@ public class GlobalExceptionHandler {
         ApiErrorResponse response = new ApiErrorResponse(
                 "Bad Request",
                 ex.getMessage()
+        );
+
+        return ResponseEntity.badRequest().body(response);
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ApiErrorResponse> handleValidationException(MethodArgumentNotValidException ex) {
+        StringBuilder message = new StringBuilder();
+
+        for (FieldError fieldError : ex.getBindingResult().getFieldErrors()) {
+            if (message.length() > 0) {
+                message.append("; ");
+            }
+
+            message.append(fieldError.getField())
+                    .append(": ")
+                    .append(fieldError.getDefaultMessage());
+        }
+
+        ApiErrorResponse response = new ApiErrorResponse(
+                "Validation Failed",
+                message.toString()
         );
 
         return ResponseEntity.badRequest().body(response);

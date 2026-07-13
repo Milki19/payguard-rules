@@ -2,16 +2,32 @@ package com.payguard.demo.dto;
 
 import com.payguard.core.model.Channel;
 import com.payguard.core.model.RiskLevel;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+
 
 import java.math.BigDecimal;
 
 public class TransactionEvaluationRequest {
 
+    @NotBlank(message = "Transaction ID cannot be blank")
     private String transactionId;
+
+    @NotNull(message = "Amount cannot be null")
+    @Positive(message = "Amount must be greater than zero")
     private BigDecimal amount;
+
+    @NotBlank(message = "Currency cannot be blank")
     private String currency;
+
+    @NotBlank(message = "Country cannot be blank")
     private String country;
+
+    @NotNull(message = "Channel cannot be null")
     private Channel channel;
+
+    @NotNull(message = "Customer risk level cannot be null")
     private RiskLevel customerRiskLevel;
 
     public String getTransactionId() {

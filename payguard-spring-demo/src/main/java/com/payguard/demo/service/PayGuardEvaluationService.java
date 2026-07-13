@@ -4,6 +4,7 @@ import com.payguard.core.engine.PaymentRuleEngine;
 import com.payguard.core.model.Transaction;
 import com.payguard.core.model.TransactionDecision;
 import com.payguard.core.rule.impl.*;
+import com.payguard.demo.audit.TransactionEvaluationAuditService;
 import com.payguard.demo.dto.TransactionEvaluationRequest;
 import com.payguard.demo.dto.TransactionEvaluationResponse;
 import org.springframework.stereotype.Service;
@@ -12,12 +13,14 @@ import org.springframework.stereotype.Service;
 public class PayGuardEvaluationService {
 
     private final PaymentRuleEngine paymentRuleEngine;
+    private final TransactionEvaluationAuditService auditService;
 
-    public PayGuardEvaluationService(PaymentRuleEngine paymentRuleEngine) {
+    public PayGuardEvaluationService(PaymentRuleEngine paymentRuleEngine, TransactionEvaluationAuditService auditService) {
         this.paymentRuleEngine = paymentRuleEngine;
+        this.auditService = auditService;
     }
 
-     public TransactionEvaluationResponse evaluateTransaction(TransactionEvaluationRequest request) {
+    public TransactionEvaluationResponse evaluateTransaction(TransactionEvaluationRequest request) {
          Transaction transaction = new Transaction(
                  request.getTransactionId(),
                  request.getAmount(),
@@ -28,9 +31,9 @@ public class PayGuardEvaluationService {
          );
 
          TransactionDecision decision = paymentRuleEngine.decideWithFullEvaluation(transaction);
+        auditService.saveEvaluation(request, decision);
 
-
-         return new TransactionEvaluationResponse(decision.getDecisionType(), decision.getReasons());
+        return new TransactionEvaluationResponse(decision.getDecisionType(), decision.getReasons());
      }
 
     public PaymentRuleEngine getPaymentRuleEngine() {
