@@ -7,4 +7,6 @@ import java.util.List;
 public interface TransactionEvaluationAuditRepository extends JpaRepository<TransactionEvaluationAuditEntity, Long> {
 
     List<TransactionEvaluationAuditEntity> findByTransactionId(String transactionId);
+    List<TransactionEvaluationAuditEntity> findAllByOrderByCreatedAtDesc();
+    List<TransactionEvaluationAuditEntity> findByTransactionIdOrderByCreatedAtDesc(String transactionId);
 }

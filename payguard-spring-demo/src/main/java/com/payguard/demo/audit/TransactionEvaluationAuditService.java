@@ -1,10 +1,12 @@
 package com.payguard.demo.audit;
 
 import com.payguard.core.model.TransactionDecision;
+import com.payguard.demo.audit.dto.TransactionEvaluationAuditResponse;
 import com.payguard.demo.dto.TransactionEvaluationRequest;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.StringJoiner;
 
 @Service
@@ -40,6 +42,24 @@ public class TransactionEvaluationAuditService {
         return auditRepository.save(auditEntity);
     }
 
+    public List<TransactionEvaluationAuditResponse> getAllEvaluations() {
+        return auditRepository.findAllByOrderByCreatedAtDesc()
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    public List<TransactionEvaluationAuditResponse> getEvaluationsByTransactionId(String transactionId) {
+        if (transactionId == null || transactionId.isBlank()) {
+            throw new IllegalArgumentException("Transaction ID cannot be null or blank");
+        }
+
+        return auditRepository.findByTransactionIdOrderByCreatedAtDesc(transactionId)
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
     private String formatReasons(TransactionDecision decision) {
         StringJoiner joiner = new StringJoiner("; ");
 
@@ -48,5 +68,19 @@ public class TransactionEvaluationAuditService {
         }
 
         return joiner.toString();
+    }
+    private TransactionEvaluationAuditResponse toResponse(TransactionEvaluationAuditEntity entity) {
+        return new TransactionEvaluationAuditResponse(
+                entity.getId(),
+                entity.getTransactionId(),
+                entity.getAmount(),
+                entity.getCurrency(),
+                entity.getCountry(),
+                entity.getChannel(),
+                entity.getCustomerRiskLevel(),
+                entity.getDecisionType(),
+                entity.getReasons(),
+                entity.getCreatedAt()
+        );
     }
 }
