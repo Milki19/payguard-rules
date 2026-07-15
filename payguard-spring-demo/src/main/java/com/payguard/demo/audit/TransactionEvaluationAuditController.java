@@ -4,6 +4,8 @@ import com.payguard.demo.audit.dto.TransactionEvaluationAuditResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.*;
+import com.payguard.core.model.DecisionType;
+import com.payguard.demo.common.dto.PagedResponse;
 
 import java.util.List;
 
@@ -35,9 +37,21 @@ public class TransactionEvaluationAuditController {
             summary = "Get audit records by transaction ID",
             description = "Returns saved audit records for a specific transaction ID ordered by creation time descending."
     )
-    public List<TransactionEvaluationAuditResponse> getEvaluationsByTransactionId(
-            @PathVariable("transactionId") String transactionId
-    ) {
+    public List<TransactionEvaluationAuditResponse> getEvaluationsByTransactionId(@PathVariable("transactionId") String transactionId) {
         return auditService.getEvaluationsByTransactionId(transactionId);
     }
+
+    @GetMapping("/search")
+    @Operation(
+            summary = "Search transaction evaluation audit records",
+            description = "Returns paginated audit records, optionally filtered by decision type."
+    )
+    public PagedResponse<TransactionEvaluationAuditResponse> searchEvaluations(
+            @RequestParam(name = "decisionType", required = false) DecisionType decisionType,
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "10") int size
+    ) {
+        return auditService.searchEvaluations(decisionType, page, size);
+    }
+
 }

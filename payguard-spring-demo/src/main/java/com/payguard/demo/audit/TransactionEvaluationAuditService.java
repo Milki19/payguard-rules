@@ -3,11 +3,18 @@ package com.payguard.demo.audit;
 import com.payguard.core.model.TransactionDecision;
 import com.payguard.demo.audit.dto.TransactionEvaluationAuditResponse;
 import com.payguard.demo.dto.TransactionEvaluationRequest;
+import com.payguard.core.model.DecisionType;
+import com.payguard.demo.common.dto.PagedResponse;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.StringJoiner;
+
 
 @Service
 public class TransactionEvaluationAuditService {
@@ -83,4 +90,42 @@ public class TransactionEvaluationAuditService {
                 entity.getCreatedAt()
         );
     }
+    public PagedResponse<TransactionEvaluationAuditResponse> searchEvaluations(DecisionType decisionType, int page, int size) {
+        if (page < 0) {
+            throw new IllegalArgumentException("Page number cannot be negative");
+        }
+
+        if (size < 1 || size > 100) {
+            throw new IllegalArgumentException("Page size must be between 1 and 100");
+        }
+
+        Pageable pageable = PageRequest.of(
+                page,
+                size,
+                Sort.by(Sort.Direction.DESC, "createdAt")
+        );
+
+        Page<TransactionEvaluationAuditEntity> resultPage;
+
+        if (decisionType == null) {
+            resultPage = auditRepository.findAll(pageable);
+        } else {
+            resultPage = auditRepository.findByDecisionType(decisionType, pageable);
+        }
+
+        List<TransactionEvaluationAuditResponse> content = resultPage.getContent()
+                .stream()
+                .map(this::toResponse)
+                .toList();
+
+        return new PagedResponse<>(
+                content,
+                resultPage.getNumber(),
+                resultPage.getSize(),
+                resultPage.getTotalElements(),
+                resultPage.getTotalPages(),
+                resultPage.isLast()
+        );
+    }
+
 }
