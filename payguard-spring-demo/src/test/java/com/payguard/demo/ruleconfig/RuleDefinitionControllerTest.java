@@ -16,6 +16,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.jayway.jsonpath.JsonPath;
 import org.springframework.test.web.servlet.MvcResult;
 
+import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 
@@ -228,5 +229,100 @@ class RuleDefinitionControllerTest {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error").value("Not Found"))
                 .andExpect(jsonPath("$.message").value("Rule definition not found with id: 999999"));
+    }
+    @Test
+    void shouldReturnBadRequestWhenAmountRuleUsesInvalidOperator() throws Exception {
+        String requestBody = """
+            {
+              "name": "Bad amount rule",
+              "ruleType": "AMOUNT_LIMIT",
+              "operator": "IN",
+              "fieldName": "amount",
+              "ruleValue": "10000,20000",
+              "decisionType": "REVIEW",
+              "message": "Bad amount rule",
+              "active": true,
+              "priority": 99
+            }
+            """;
+
+        mockMvc.perform(post("/api/rules")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("Bad Request"))
+                .andExpect(jsonPath("$.message").value(
+                        "Field amount supports only GREATER_THAN, LESS_THAN and EQUALS operators"
+                ));
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenChannelValueIsInvalid() throws Exception {
+        String requestBody = """
+            {
+              "name": "Bad channel rule",
+              "ruleType": "CHANNEL_ALLOWED",
+              "operator": "IN",
+              "fieldName": "channel",
+              "ruleValue": "ONLINE,MOBILE",
+              "decisionType": "REJECTED",
+              "message": "Bad channel rule",
+              "active": true,
+              "priority": 99
+            }
+            """;
+
+        mockMvc.perform(post("/api/rules")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("Bad Request"))
+                .andExpect(jsonPath("$.message").value("Invalid value for field channel: MOBILE"));
+    }
+
+    @Test
+    void shouldReturnOnlyActiveRuleDefinitions() throws Exception {
+        String activeRuleRequestBody = """
+            {
+              "name": "Active test rule",
+              "ruleType": "AMOUNT_LIMIT",
+              "operator": "GREATER_THAN",
+              "fieldName": "amount",
+              "ruleValue": "10000",
+              "decisionType": "REVIEW",
+              "message": "Transaction amount exceeds review limit",
+              "active": true,
+              "priority": 10
+            }
+            """;
+
+        String inactiveRuleRequestBody = """
+            {
+              "name": "Inactive test rule",
+              "ruleType": "COUNTRY_BLOCKED",
+              "operator": "IN",
+              "fieldName": "country",
+              "ruleValue": "RU,KP,IR",
+              "decisionType": "REJECTED",
+              "message": "Transaction country is blocked",
+              "active": false,
+              "priority": 20
+            }
+            """;
+
+        mockMvc.perform(post("/api/rules")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(activeRuleRequestBody))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/rules")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(inactiveRuleRequestBody))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/rules/active"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[*].name", hasItem("Active test rule")))
+                .andExpect(jsonPath("$[*].name", not(hasItem("Inactive test rule"))));
     }
 }

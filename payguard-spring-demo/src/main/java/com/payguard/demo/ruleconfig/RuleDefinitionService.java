@@ -12,13 +12,16 @@ import java.util.List;
 public class RuleDefinitionService {
 
     private final RuleDefinitionRepository ruleDefinitionRepository;
+    private final RuleDefinitionValidator ruleDefinitionValidator;
 
-    public RuleDefinitionService(RuleDefinitionRepository ruleDefinitionRepository) {
+    public RuleDefinitionService(RuleDefinitionRepository ruleDefinitionRepository, RuleDefinitionValidator ruleDefinitionValidator) {
         this.ruleDefinitionRepository = ruleDefinitionRepository;
+        this.ruleDefinitionValidator = ruleDefinitionValidator;
     }
 
     public RuleDefinitionResponse createRule(RuleDefinitionRequest request) {
         LocalDateTime now = LocalDateTime.now();
+        ruleDefinitionValidator.validate(request);
 
         RuleDefinitionEntity entity = new RuleDefinitionEntity(
                 request.getName(),
@@ -41,6 +44,13 @@ public class RuleDefinitionService {
 
     public List<RuleDefinitionResponse> getAllRules() {
         return ruleDefinitionRepository.findAllByOrderByPriorityAscCreatedAtDesc()
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    public List<RuleDefinitionResponse> getActiveRules() {
+        return ruleDefinitionRepository.findByActiveTrueOrderByPriorityAscCreatedAtDesc()
                 .stream()
                 .map(this::toResponse)
                 .toList();
@@ -69,6 +79,7 @@ public class RuleDefinitionService {
 
     public RuleDefinitionResponse updateRule(Long id, RuleDefinitionRequest request) {
         RuleDefinitionEntity entity = findRuleById(id);
+        ruleDefinitionValidator.validate(request);
 
         entity.update(
                 request.getName(),

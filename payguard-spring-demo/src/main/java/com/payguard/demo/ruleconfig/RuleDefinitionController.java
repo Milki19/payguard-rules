@@ -41,6 +41,15 @@ public class RuleDefinitionController {
         return ruleDefinitionService.getAllRules();
     }
 
+    @GetMapping("/active")
+    @Operation(
+            summary = "Get active rule definitions",
+            description = "Returns only active rule definitions ordered by priority. These are the rules used by the dynamic payment engine."
+    )
+    public List<RuleDefinitionResponse> getActiveRules() {
+        return ruleDefinitionService.getActiveRules();
+    }
+
     @GetMapping("/{id}")
     @Operation(
             summary = "Get rule definition by ID",

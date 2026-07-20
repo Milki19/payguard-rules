@@ -11,5 +11,20 @@ services:
     volumes:
       - payguard-postgres-data:/var/lib/postgresql/data
 
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: payguard-app
+    depends_on:
+      - postgres
+    environment:
+      SPRING_PROFILES_ACTIVE: postgres
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/payguarddb
+      SPRING_DATASOURCE_USERNAME: payguard
+      SPRING_DATASOURCE_PASSWORD: payguard
+    ports:
+      - "8080:8080"
+
 volumes:
   payguard-postgres-data:
