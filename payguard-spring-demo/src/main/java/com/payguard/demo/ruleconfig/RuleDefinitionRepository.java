@@ -7,4 +7,6 @@ import java.util.List;
 public interface RuleDefinitionRepository extends JpaRepository<RuleDefinitionEntity, Long> {
 
     List<RuleDefinitionEntity> findAllByOrderByPriorityAscCreatedAtDesc();
+
+    List<RuleDefinitionEntity> findByActiveTrueOrderByPriorityAscCreatedAtDesc();
 }
