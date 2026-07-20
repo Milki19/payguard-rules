@@ -35,7 +35,7 @@ class PaymentRuleEngineDecisionTest {
 
         assertTrue(decision.isApproved());
         assertEquals(DecisionType.APPROVED, decision.getDecisionType());
-        assertEquals(List.of("Payment rules have been evaluated successfully"), decision.getReasons());
+        assertEquals(List.of("PaymentRuleEngine: Payment rules have been evaluated successfully"), decision.getReasons());
     }
 
     @Test
@@ -55,7 +55,7 @@ class PaymentRuleEngineDecisionTest {
 
         assertTrue(decision.isRejected());
         assertEquals(DecisionType.REJECTED, decision.getDecisionType());
-        assertEquals(List.of("Transaction country is blocked"), decision.getReasons());
+        assertEquals(List.of("CountryBlockedRule: Transaction country is blocked"), decision.getReasons());
     }
 
     @Test
@@ -75,7 +75,7 @@ class PaymentRuleEngineDecisionTest {
 
         assertTrue(decision.requiresReview());
         assertEquals(DecisionType.REVIEW, decision.getDecisionType());
-        assertEquals(List.of("Transaction amount exceeds review limit"), decision.getReasons());
+        assertEquals(List.of("AmountLimitRule: Transaction amount exceeds review limit"), decision.getReasons());
     }
 
     private Transaction validTransaction(
