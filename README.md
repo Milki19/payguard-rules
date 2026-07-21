@@ -1,85 +1,82 @@
 # PayGuard Rules
 
-PayGuard Rules is a Java payment transaction validation project built as a small rule engine library with a Spring Boot demo API.
+[![PayGuard Maven CI](https://github.com/Milki19/payguard-rules/actions/workflows/maven-ci.yml/badge.svg)](https://github.com/Milki19/payguard-rules/actions/workflows/maven-ci.yml)
 
-The goal of this project is to demonstrate clean Java backend design through payment-related business rules, unit testing, REST API integration, and modular Maven structure.
+PayGuard Rules is a Java/Spring Boot payment decision engine.
 
-## Project Overview
+It evaluates payment transactions against configurable database-driven rules and returns a final decision:
 
-The system evaluates payment transactions and returns a decision:
+- `APPROVED`
+- `REVIEW`
+- `REJECTED`
 
-* `APPROVED`
-* `REVIEW`
-* `REJECTED`
+The project demonstrates clean Java backend design, Maven multi-module structure, REST APIs, PostgreSQL persistence, dynamic rule evaluation, audit logging, Docker Compose, and GitHub Actions CI.
 
-Each transaction is checked against multiple rules, such as amount limits, blocked countries, allowed currencies, allowed channels, and customer risk level.
+## Tech Stack
 
-The project is split into two Maven modules:
+- Java 17
+- Maven multi-module
+- Spring Boot
+- Spring Web
+- Spring Data JPA
+- Bean Validation
+- PostgreSQL
+- H2 for tests/local default profile
+- Docker Compose
+- JUnit 5
+- Mockito
+- MockMvc
+- Swagger/OpenAPI
+- GitHub Actions
+
+## Project Structure
 
 ```text
 payguard-rules
 ├── payguard-core
+│   └── Core domain model, rules, and rule engine
+│
 └── payguard-spring-demo
+    └── Spring Boot REST API, database, audit log, dynamic rules
 ```
 
-## Modules
+## Main Features
 
-### payguard-core
+### Core Rule Engine
 
-Core Java library containing the domain model, rules, rule engine, and tests.
+The `payguard-core` module contains the reusable payment rule engine.
 
-Main packages:
+It supports:
+
+- fast evaluation, stops at first failed rule
+- full evaluation, collects all failed rule reasons
+- final decision aggregation with priority:
 
 ```text
-com.payguard.core.model
-com.payguard.core.rule
-com.payguard.core.rule.impl
-com.payguard.core.engine
+REJECTED > REVIEW > APPROVED
 ```
 
-### payguard-spring-demo
+### Dynamic Database Rules
 
-Spring Boot demo application that exposes the PayGuard engine through a REST API.
+The Spring Boot module stores rule definitions in PostgreSQL.
 
-Main packages:
+A rule definition contains:
 
-```text
-com.payguard.demo.controller
-com.payguard.demo.dto
-com.payguard.demo.service
-com.payguard.demo.config
-com.payguard.demo.exception
-```
+- name
+- rule type
+- transaction field
+- operator
+- rule value
+- decision type
+- message
+- active flag
+- priority
 
-## Core Concepts Used
+Only active rules are used by the dynamic payment engine.
 
-This project is focused on practicing and demonstrating:
-
-* Java Core
-* OOP principles
-* Maven multi-module structure
-* Immutable domain models
-* Interfaces
-* Polymorphism
-* Strategy pattern
-* Rule engine design
-* Static factory methods
-* Constructor injection
-* Spring Boot REST API
-* Global exception handling
-* Unit testing with JUnit 5
-* Clean validation and fail-fast behavior
-
-## Domain Model
-
-### Transaction
-
-Represents a payment transaction.
-
-Main fields:
+Supported transaction fields:
 
 ```text
-transactionId
 amount
 currency
 country
@@ -87,123 +84,147 @@ channel
 customerRiskLevel
 ```
 
-### DecisionType
-
-Possible decision values:
+Supported operators:
 
 ```text
-APPROVED
-REVIEW
-REJECTED
+GREATER_THAN
+LESS_THAN
+EQUALS
+IN
+NOT_IN
 ```
 
-### Channel
+### Audit Log
 
-Supported transaction channels:
+Every transaction evaluation is saved to the audit table with:
+
+- transaction data
+- final decision
+- decision reasons
+- creation timestamp
+
+## Running with Docker Compose
+
+From the project root:
+
+```bash
+docker compose up --build
+```
+
+Run in background:
+
+```bash
+docker compose up --build -d
+```
+
+Check containers:
+
+```bash
+docker compose ps
+```
+
+Expected containers:
 
 ```text
-ATM
-POS
-ONLINE
-BANK_TRANSFER
+payguard-postgres
+payguard-app
 ```
 
-### RiskLevel
-
-Customer risk levels:
+Swagger UI:
 
 ```text
-LOW
-MEDIUM
-HIGH
+http://localhost:8080/swagger-ui/index.html
 ```
 
-## Rules
+OpenAPI JSON:
 
-All rules implement the same interface:
+```text
+http://localhost:8080/v3/api-docs
+```
 
-```java
-public interface PaymentRule {
-    RuleResult evaluate(Transaction transaction);
+Stop containers:
+
+```bash
+docker compose down
+```
+
+Remove containers and local PostgreSQL data:
+
+```bash
+docker compose down -v
+```
+
+## API Usage
+
+### 1. Create a Rule
+
+```http
+POST /api/rules
+```
+
+Example high amount review rule:
+
+```json
+{
+  "name": "High amount review",
+  "ruleType": "AMOUNT_LIMIT",
+  "operator": "GREATER_THAN",
+  "fieldName": "amount",
+  "ruleValue": "10000",
+  "decisionType": "REVIEW",
+  "message": "Transaction amount exceeds review limit",
+  "active": true,
+  "priority": 30
 }
 ```
 
-This allows the engine to evaluate different rules through the same contract.
+Example blocked country rule:
 
-Implemented rules:
-
-### AmountLimitRule
-
-Sends a transaction to `REVIEW` if the amount is above the configured limit.
-
-### CountryBlockedRule
-
-Rejects a transaction if the country is in the blocked countries list.
-
-### CurrencyAllowedRule
-
-Rejects a transaction if the currency is not in the allowed currencies list.
-
-### ChannelAllowedRule
-
-Rejects a transaction if the channel is not in the allowed channels list.
-
-### RiskLevelRule
-
-Sends a transaction to `REVIEW` if:
-
-* customer risk level is `HIGH`
-* customer risk level is `MEDIUM` and amount is above the configured medium-risk limit
-
-## PaymentRuleEngine
-
-`PaymentRuleEngine` evaluates transactions using a list of `PaymentRule` implementations.
-
-It supports two evaluation modes:
-
-### Fast evaluation
-
-Stops at the first failed rule.
-
-```java
-RuleResult result = engine.evaluate(transaction);
+```json
+{
+  "name": "Blocked countries",
+  "ruleType": "COUNTRY_BLOCKED",
+  "operator": "IN",
+  "fieldName": "country",
+  "ruleValue": "RU,KP,IR",
+  "decisionType": "REJECTED",
+  "message": "Transaction country is blocked",
+  "active": true,
+  "priority": 10
+}
 ```
 
-### Full evaluation
+### 2. List Rules
 
-Runs all rules and returns all rule results.
-
-```java
-List<RuleResult> results = engine.evaluateAll(transaction);
+```http
+GET /api/rules
 ```
 
-### Decision methods
+List only active rules used by the engine:
 
-The engine can also return a final `TransactionDecision`.
-
-```java
-TransactionDecision decision = engine.decide(transaction);
+```http
+GET /api/rules/active
 ```
 
-or:
+Get rule by ID:
 
-```java
-TransactionDecision decision = engine.decideWithFullEvaluation(transaction);
+```http
+GET /api/rules/{id}
 ```
 
-Full evaluation collects all failed rule reasons.
+Update rule:
 
-Decision priority:
-
-```text
-REJECTED > REVIEW > APPROVED
+```http
+PUT /api/rules/{id}
 ```
 
-## Spring Boot API
+Activate or deactivate rule:
 
-The Spring Boot module exposes the engine through a REST endpoint.
+```http
+PATCH /api/rules/{id}/active?active=true
+```
 
-### Evaluate Transaction
+### 3. Evaluate a Transaction
 
 ```http
 POST /api/transactions/evaluate
@@ -214,65 +235,7 @@ Example request:
 ```json
 {
   "transactionId": "TX-1001",
-  "amount": 5000,
-  "currency": "EUR",
-  "country": "RS",
-  "channel": "ONLINE",
-  "customerRiskLevel": "LOW"
-}
-```
-
-Example response:
-
-```json
-{
-  "decisionType": "APPROVED",
-  "reasons": [
-    "All payment rules passed"
-  ]
-}
-```
-
-Example rejected request:
-
-```json
-{
-  "transactionId": "TX-1002",
   "amount": 12500,
-  "currency": "GBP",
-  "country": "RU",
-  "channel": "ATM",
-  "customerRiskLevel": "HIGH"
-}
-```
-
-Example response:
-
-```json
-{
-  "decisionType": "REJECTED",
-  "reasons": [
-    "CurrencyAllowedRule: Transaction currency is not allowed",
-    "CountryBlockedRule: Transaction country is blocked",
-    "ChannelAllowedRule: Transaction channel is not allowed",
-    "AmountLimitRule: Transaction amount exceeds review limit",
-    "RiskLevelRule: High risk customer requires manual review"
-  ]
-}
-```
-
-## Error Handling
-
-The Spring demo uses a global exception handler with `@RestControllerAdvice`.
-
-Invalid requests return a clean JSON error response.
-
-Example invalid request:
-
-```json
-{
-  "transactionId": "",
-  "amount": 5000,
   "currency": "EUR",
   "country": "RS",
   "channel": "ONLINE",
@@ -284,92 +247,117 @@ Example response:
 
 ```json
 {
-  "error": "Bad Request",
-  "message": "Transaction ID cannot be null or blank"
+  "decisionType": "REVIEW",
+  "reasons": [
+    "High amount review: Transaction amount exceeds review limit"
+  ]
 }
 ```
 
-## How to Run Tests
+If no active rules exist, the API returns:
 
-From the root project:
+```json
+{
+  "error": "Rule Configuration Error",
+  "message": "No active rule definitions found"
+}
+```
+
+### 4. Read Audit Log
+
+```http
+GET /api/audit/evaluations
+```
+
+Get audit records by transaction ID:
+
+```http
+GET /api/audit/evaluations/{transactionId}
+```
+
+Search audit records:
+
+```http
+GET /api/audit/evaluations/search?page=0&size=10
+```
+
+Filter by decision type:
+
+```http
+GET /api/audit/evaluations/search?decisionType=REJECTED&page=0&size=10
+```
+
+## Local Database Access
+
+Connect to PostgreSQL container:
 
 ```bash
-mvn test
+docker exec -it payguard-postgres psql -U payguard -d payguarddb
 ```
 
-Or run tests directly from IntelliJ IDEA.
+Show rule definitions:
 
-## How to Run Spring Demo
-
-Run the main class:
-
-```text
-PayGuardDemoApplication
+```sql
+SELECT id, name, rule_type, field_name, operator, rule_value, decision_type, active, priority
+FROM rule_definitions
+ORDER BY priority ASC;
 ```
 
-Then send requests to:
+Show audit log:
 
-```text
-http://localhost:8080/api/transactions/evaluate
+```sql
+SELECT id, transaction_id, decision_type, reasons, created_at
+FROM transaction_evaluation_audit
+ORDER BY created_at DESC;
 ```
 
-## Example curl Request
+## Running Tests
+
+From the project root:
 
 ```bash
-curl -X POST http://localhost:8080/api/transactions/evaluate \
-  -H "Content-Type: application/json" \
-  -d '{
-    "transactionId": "TX-1001",
-    "amount": 5000,
-    "currency": "EUR",
-    "country": "RS",
-    "channel": "ONLINE",
-    "customerRiskLevel": "LOW"
-  }'
+mvn clean test
 ```
 
-## Project Structure
+Or run tests from IntelliJ IDEA.
+
+The test suite includes:
+
+- core rule engine unit tests
+- dynamic rule unit tests
+- Mockito factory tests
+- MockMvc API tests
+- audit endpoint tests
+- rule CRUD tests
+- validation tests
+
+## Continuous Integration
+
+GitHub Actions runs the Maven test suite on every push and pull request.
+
+Workflow file:
 
 ```text
-payguard-rules
-├── pom.xml
-├── payguard-core
-│   ├── pom.xml
-│   └── src
-│       ├── main/java/com/payguard/core
-│       │   ├── engine
-│       │   ├── model
-│       │   ├── rule
-│       │   └── rule/impl
-│       └── test/java/com/payguard/core
-│
-└── payguard-spring-demo
-    ├── pom.xml
-    └── src/main/java/com/payguard/demo
-        ├── config
-        ├── controller
-        ├── dto
-        ├── exception
-        └── service
+.github/workflows/maven-ci.yml
+```
+
+CI command:
+
+```bash
+mvn clean test
 ```
 
 ## Why This Project Exists
 
-This project was built as a practical Java refresh project focused on backend engineering, clean architecture, payment-style business logic, testing, and Spring Boot API development.
+This project was built as a practical Java backend refresh project focused on:
 
-It is designed to show how a small core library can be separated from the REST API layer and reused independently.
+- clean OOP design
+- rule engine architecture
+- Spring Boot APIs
+- validation and error handling
+- database persistence
+- test coverage
+- Docker-based local setup
+- CI pipeline
 
-## Future Improvements
-
-Planned improvements:
-
-* Add database support for configurable rules
-* Add Spring validation annotations
-* Add integration tests for REST endpoints
-* Add Docker support
-* Add GitHub Actions CI
-* Add OpenAPI/Swagger documentation
-* Add audit logging
-* Add rule priorities
-* Add rule activation/deactivation
-* Add PostgreSQL support
+It shows how a small Java rule engine can evolve into a configurable payment decision platform.
