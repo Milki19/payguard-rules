@@ -347,6 +347,14 @@ CI command:
 mvn clean test
 ```
 
+## Architecture
+
+Detailed architecture documentation is available here:
+
+```text
+docs/architecture.md
+```
+
 ## Why This Project Exists
 
 This project was built as a practical Java backend refresh project focused on:
