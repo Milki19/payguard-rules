@@ -10,7 +10,63 @@ It evaluates payment transactions against configurable database-driven rules and
 - `REVIEW`
 - `REJECTED`
 
-The project demonstrates clean Java backend design, Maven multi-module structure, REST APIs, PostgreSQL persistence, dynamic rule evaluation, audit logging, Docker Compose, and GitHub Actions CI.
+Rules live in the database, so they can be added, changed or switched off through the API without redeploying. Every evaluation is written to an audit log.
+
+## Quick Start
+
+You need Docker. Start the app and a PostgreSQL database:
+
+```bash
+docker compose up --build -d
+```
+
+Add a rule that sends large payments to manual review:
+
+```bash
+curl -X POST http://localhost:8080/api/rules \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "High amount review",
+    "ruleType": "AMOUNT_LIMIT",
+    "operator": "GREATER_THAN",
+    "fieldName": "amount",
+    "ruleValue": "10000",
+    "decisionType": "REVIEW",
+    "message": "Transaction amount exceeds review limit",
+    "active": true,
+    "priority": 30
+  }'
+```
+
+Evaluate a payment:
+
+```bash
+curl -X POST http://localhost:8080/api/transactions/evaluate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "transactionId": "TX-1001",
+    "amount": 12500,
+    "currency": "EUR",
+    "country": "RS",
+    "channel": "ONLINE",
+    "customerRiskLevel": "LOW"
+  }'
+```
+
+```json
+{
+  "decisionType": "REVIEW",
+  "reasons": ["High amount review: Transaction amount exceeds review limit"]
+}
+```
+
+See what was logged:
+
+```bash
+curl "http://localhost:8080/api/audit/evaluations/search?page=0&size=10"
+```
+
+All endpoints are also available in Swagger UI at http://localhost:8080/swagger-ui/index.html.
 
 ## Tech Stack
 
@@ -319,8 +375,6 @@ From the project root:
 mvn clean test
 ```
 
-Or run tests from IntelliJ IDEA.
-
 The test suite includes:
 
 - core rule engine unit tests
@@ -349,23 +403,8 @@ mvn clean test
 
 ## Architecture
 
-Detailed architecture documentation is available here:
+The request flow, module boundaries and database tables are described in [docs/architecture.md](docs/architecture.md).
 
-```text
-docs/architecture.md
-```
+## Background
 
-## Why This Project Exists
-
-This project was built as a practical Java backend refresh project focused on:
-
-- clean OOP design
-- rule engine architecture
-- Spring Boot APIs
-- validation and error handling
-- database persistence
-- test coverage
-- Docker-based local setup
-- CI pipeline
-
-It shows how a small Java rule engine can evolve into a configurable payment decision platform.
+I started this as a plain Java rule engine with no framework (`payguard-core`) and then built a Spring Boot service around it. The core module still has no Spring dependency, so the engine can be tested and reused on its own. The Spring module adds what a real service needs: rules stored in the database, validation, error handling, an audit trail, Docker setup and CI.
